@@ -11,16 +11,18 @@ export function postIdForWire(value) {
   // Tlon expects canonical @ud text; IDs exceed JavaScript's safe integer range.
   return BigInt(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
+function attributedBody(message) {
+  return `${message.nickname} · ${message.guest_id.slice(0, 6)} — Octra guest\n${message.body}`;
+}
 export function postAction(message, { ship, nest, bridgeId, parent }) {
   channel(nest);
   if (!/^~[a-z-]+$/.test(ship)) throw new InputError('Invalid gateway ship');
   if (message.reply_to && !parent?.native_id) throw new InputError('Wait for the original message to reach Tlon before replying');
-  const label = `${message.nickname} · ${message.guest_id.slice(0, 6)} — Octra guest`;
   const essay = {
     author: ship,
-    content: [{inline: [`${label}\n${message.body}`]}],
+    content: [{inline: [attributedBody(message)]}],
     sent: message.created_at,
-    blob: JSON.stringify({type: 'octra-tlon-alpha', bridgeId, ref: message.ref})
+    blob: null
   };
   // Text attribution is the compatibility baseline; no global profile changes.
   const action = parent
@@ -83,6 +85,20 @@ export class Outbox {
     } finally { this.busy = false; }
   }
   reconcile(payload) {
-    for (const p of normalizePosts(payload, {...this.config, bridgeId: this.store.bridgeId})) this.store.ingest(p);
+    for (const p of normalizePosts(payload, {...this.config, bridgeId: this.store.bridgeId})) {
+      // Keep correlation in the durable outbox: Tlon renders unknown blobs as an
+      // upgrade warning. Match only our own attempted sends, with exact payload,
+      // original timestamp and thread. Legacy blob receipts remain readable.
+      if (!p.bridgeRef && p.author === this.config.ship) {
+        const candidates=this.store.db.prepare(`SELECT m.*,p.native_id AS parent_native_id
+          FROM messages m LEFT JOIN messages p ON p.seq=m.reply_to
+          WHERE m.source='octra' AND m.native_id IS NULL AND m.created_at=?
+          AND m.status IN ('sending','sent','uncertain')`).all(p.sent)
+          .filter(m=>attributedBody(m)===p.body && (m.parent_native_id ?? null)===(p.parentNativeId ?? null));
+        if(candidates.length>1)throw new Error('Ambiguous Tlon delivery; inspect outbox before retrying');
+        if(candidates.length===1)p.bridgeRef=candidates[0].ref;
+      }
+      this.store.ingest(p);
+    }
   }
 }

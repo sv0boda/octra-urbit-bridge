@@ -83,3 +83,7 @@ Do not run two copies of a live Urbit pier. Stop the worker before performing sh
 To update your own queue, compile first and compare storage keys and method behavior with the deployed version. After pausing forwarding, `node scripts/circle.mjs update-program` previews the transaction and `--apply` submits it. Verify existing records and views before resuming. This operation currently has a 0.2 devnet OCT cap.
 
 Guest calls and operator publications currently cost 0.001 devnet OCT each. Unchanged reads do not incur chain fees. Reactions are checked only after a new chat message, then all observed changes are sent in one snapshot. See [costs](COSTS.md). There is no automatic balance top-up.
+
+### Tlon post compatibility
+
+Plain bridge messages use `blob: null`. Tlon treats unrecognized blob payloads as unsupported content and displays an upgrade warning. Delivery correlation lives in SQLite: an attempted send must match the gateway author, original timestamp, exact attributed text, and thread. Ambiguous matches stop for inspection instead of being resent. Legacy bridge blobs remain readable for reconciliation, but new posts do not emit them. Existing posts from older deployments can be repaired in place after confirming their native IDs and delivery records; preserve the essay, replies and reactions, changing only the unsupported blob.

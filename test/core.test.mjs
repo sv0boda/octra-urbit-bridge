@@ -92,3 +92,35 @@ test('rejection is failed, while transport uncertainty remains distinct',async t
  const s=memory(t);const m=send(s);const out=new Outbox(s,{async poke(){const e=new Error('nack');e.rejected=true;throw e;}},config);
  await assert.rejects(()=>out.flushOne());assert.equal(s.message(m.seq).status,'failed');
 });
+
+test('plain Tlon posts contain no custom blob while lost acknowledgements still reconcile',async t=>{
+ const s=memory(t),tlon=new LocalTlon();let action;
+ const out=new Outbox(s,{async poke(a){action=a;await tlon.poke(a);throw new Error('response lost');}},config);
+ const m=send(s);await assert.rejects(out.flushOne());
+ assert.equal(action.json.channel.action.post.add.blob,null);
+ out.reconcile(tlon.history());assert.equal(s.message(m.seq).status,'delivered');
+ assert.equal(s.room(alice).messages.length,1);assert.equal(await out.flushOne(),false);
+});
+test('plain correlation refuses another author, wrong timestamp, wrong body or wrong thread',async t=>{
+ for(const mismatch of ['author','sent','content','parent']){
+  const s=memory(t),tlon=new LocalTlon(),out=new Outbox(s,tlon,config);const m=send(s);
+  await out.flushOne();const history=tlon.history();const post=Object.values(history.posts)[0];
+  if(mismatch==='parent'){
+   const essay=post.essay;history.posts={'200':{essay:{author:'~zod',sent:1,content:[{inline:['parent']}],blob:null},seal:{replies:{'201':{'reply-essay':essay}}}}};
+  }else if(mismatch==='content')post.essay.content=[{inline:['different']}];
+  else post.essay[mismatch]=mismatch==='author'?'~zod':post.essay.sent+1;
+  out.reconcile(history);assert.equal(s.message(m.seq).status,'sent');
+ }
+});
+test('indistinguishable attempted deliveries stay uncertain instead of guessing',async t=>{
+ const s=memory(t,{clock:()=>123}),tlon=new LocalTlon(),out=new Outbox(s,tlon,config);
+ const a=send(s),b=send(s,alice,'hello','2');s.status(b.seq,'uncertain');await out.flushOne();
+ assert.throws(()=>out.reconcile(tlon.history()),/Ambiguous/);
+ assert.equal(s.message(a.seq).native_id,null);assert.equal(s.message(b.seq).native_id,null);
+});
+test('legacy blob delivery receipts still reconcile after the format change',t=>{
+ const s=memory(t),m=send(s),out=new Outbox(s,new LocalTlon(),config);s.status(m.seq,'uncertain');
+ const essay=postAction(m,{...config,bridgeId:s.bridgeId}).json.channel.action.post.add;
+ essay.blob=JSON.stringify({type:'octra-tlon-alpha',bridgeId:s.bridgeId,ref:m.ref});
+ out.reconcile({posts:{'123':{essay}}});assert.equal(s.message(m.seq).native_id,'123');
+});

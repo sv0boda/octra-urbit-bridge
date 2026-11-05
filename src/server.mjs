@@ -18,7 +18,7 @@ export function createLocalServer({dbFile = ':memory:'} = {}) {
   for (const m of store.db.prepare("SELECT * FROM messages WHERE native_id IS NOT NULL ORDER BY seq").all()) {
     tlon.serial = Math.max(tlon.serial, Number(m.native_id));
     const essay = {author: m.source === 'octra' ? '~nec' : m.nickname, content: [{inline: [m.body]}], sent: m.created_at,
-      ...(m.source === 'octra' ? {blob: JSON.stringify({type: 'octra-tlon-alpha', bridgeId: store.bridgeId, ref: m.ref})} : {})};
+      blob: null};
     const parent = m.reply_to ? store.message(m.reply_to) : null;
     if (parent && tlon.posts[parent.native_id]) tlon.posts[parent.native_id].seal.replies[m.native_id] = {'reply-essay': essay, seal: {id: m.native_id}};
     else tlon.posts[m.native_id] = {essay, seal: {id: m.native_id, replies: {}}};
