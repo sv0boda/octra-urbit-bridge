@@ -40,7 +40,7 @@ function host(overrides = {}) {
     const views = {get_reactions: '[]', get_head: 1, get_nickname: 'Zoë', get_request: state.prior, get_message: state.value};
     return {result: views[payload.method]};
   }};
-  return {client: queueTransport({bridge}), calls, state};
+  return {client: queueTransport({spacing:0,bridge}), calls, state};
 }
 const draft = {body: 'Hello 🌙', nickname: 'Zoë', requestId: 'stable-request-id'};
 
@@ -55,7 +55,7 @@ test('cleared history is excluded even with an old cursor; later messages remain
     assert.equal(payload.method,'get_message');ids.push(payload.params[0]);
     return {result:outgoing('New conversation')};
   }};
-  const room=await queueTransport({bridge,visibleAfter:9}).read({after:0});
+  const room=await queueTransport({spacing:0,bridge,visibleAfter:9}).read({after:0});
   assert.deepEqual(ids,[10,11]);assert.deepEqual(room.messages.map(m=>m.id),[10,11]);
   assert.equal(room.head,11);
 });
@@ -77,14 +77,14 @@ test('serializes message views and recovers from temporary Circle contention', a
       return {result:outgoing()};
     }finally{active--;}
   }};
-  const room=await queueTransport({bridge,wait:async ms=>delays.push(ms)}).read();
+  const room=await queueTransport({spacing:0,bridge,wait:async ms=>delays.push(ms)}).read();
   assert.equal(room.messages.length,3);assert.deepEqual(delays,[250]);
 });
 
 test('busy retries are bounded and unrelated view failures are not retried', async () => {
   let calls=0;
   const bridge={async request(){calls++;throw new Error('circle view busy');}};
-  const client=queueTransport({bridge,wait:async()=>{}});
+  const client=queueTransport({spacing:0,bridge,wait:async()=>{}});
   await assert.rejects(client.head(),/circle view busy/);assert.equal(calls,5);
   calls=0;bridge.request=async()=>{calls++;throw new Error('Unauthorized');};
   await assert.rejects(client.head(),/Unauthorized/);assert.equal(calls,1);
@@ -147,7 +147,7 @@ test('idle refresh reuses settled messages but still reads delivery and reaction
 test('429 pauses every read and send, backs off, and resumes without duplicate calls',async()=>{
   let time=0,fail=true,calls=0;
   const bridge={async request(){calls++;if(fail)throw new Error('RPC HTTP 429');return {result:0};}};
-  const client=queueTransport({bridge,now:()=>time});
+  const client=queueTransport({spacing:0,bridge,now:()=>time});
   await assert.rejects(client.head(),{code:'RATE_LIMITED'});
   for(const request of [()=>client.head(),()=>client.read(),()=>client.check('id'),()=>client.send(draft)])
     await assert.rejects(request(),{code:'RATE_LIMITED'});
@@ -159,7 +159,7 @@ test('429 pauses every read and send, backs off, and resumes without duplicate c
 
 test('an ambiguous send 429 preserves the request for read-only reconciliation',async()=>{
   let time=0,calls=0,confirmed=false;
-  const client=queueTransport({now:()=>time,bridge:{async request(method,payload){
+  const client=queueTransport({spacing:0,now:()=>time,bridge:{async request(method,payload){
     if(method==='wallet.info')return {address:alice};
     if(method==='program.call'){calls++;confirmed=true;throw new Error('RPC HTTP 429');}
     return {result:payload.method==='get_request'?(confirmed?1:0):outgoing()};
@@ -172,7 +172,7 @@ test('an ambiguous send 429 preserves the request for read-only reconciliation',
 
 test('a partially loaded room keeps completed messages across a rate-limit pause',async()=>{
   let time=0,blocked=true;const ids=[];
-  const client=queueTransport({now:()=>time,bridge:{async request(method,payload){
+  const client=queueTransport({spacing:0,now:()=>time,bridge:{async request(method,payload){
     if(method==='wallet.info')return {address:alice};
     const values={get_head:3,get_nickname:'Zoë',get_reactions:'[]'};
     if(payload.method!=='get_message')return {result:values[payload.method]};
@@ -183,4 +183,22 @@ test('a partially loaded room keeps completed messages across a rate-limit pause
   await assert.rejects(client.read(),{code:'RATE_LIMITED'});
   blocked=false;time=30000;assert.equal((await client.read()).messages.length,3);
   assert.deepEqual(ids,[1,2,2,3]);
+});
+
+test('nonce-read failure is pre-submission and pauses new attempts',async()=>{
+  let time=0,calls=0;
+  const client=queueTransport({spacing:0,now:()=>time,bridge:{async request(method){
+    if(method==='wallet.info')return {address:alice};
+    if(method==='program.call'){calls++;throw new Error('cannot read account nonce');}
+    return {result:0};
+  }}});
+  await assert.rejects(client.send(draft),{code:'NOT_SUBMITTED'});
+  await assert.rejects(client.send(draft),{code:'RATE_LIMITED'});assert.equal(calls,1);
+});
+
+test('serialized reads are paced even without RPC latency',async()=>{
+  let time=0;const starts=[];
+  const client=queueTransport({now:()=>time,wait:async delay=>{time+=delay;},bridge:{async request(){starts.push(time);return {result:0};}}});
+  await Promise.all([client.head(),client.head(),client.head()]);
+  assert.deepEqual(starts,[0,500,1000]);
 });

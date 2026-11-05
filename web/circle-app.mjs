@@ -49,17 +49,17 @@ function showProgress(stage, detail) {
   sendStage = stage;
   const labels = {checking:'Checking this message…', wallet:'Waiting for wallet approval…',
     submitted:'Transaction submitted', unknown:'Checking submission status',
-    confirmed:'Message confirmed on devnet', delivered:'Delivered to Tlon', cancelled:'Sending cancelled'};
+    confirmed:'Message confirmed on devnet', delivered:'Delivered to Tlon', cancelled:'Sending cancelled', failed:'Message not submitted'};
   el('notice').textContent = labels[stage] || detail;
   el('send-detail').textContent = detail || '';
   el('send-progress').classList.remove('hidden');
   el('send-progress').dataset.stage = stage;
   if (stage === 'checking') el('send-progress').scrollIntoView({block:'nearest',behavior:'smooth'});
   el('send-progress').setAttribute('aria-busy', String(['checking','wallet','submitted','unknown','confirmed'].includes(stage)));
-  const completed = {checking:0,wallet:0,submitted:1,unknown:0,confirmed:2,delivered:3,cancelled:0}[stage];
+  const completed = {checking:0,wallet:0,submitted:1,unknown:0,confirmed:2,delivered:3,cancelled:0,failed:0}[stage];
   for (const [i, item] of [...el('send-steps').children].entries()) {
     item.classList.toggle('done', i < completed);
-    item.classList.toggle('current', i === completed && completed < 3 && stage !== 'cancelled');
+    item.classList.toggle('current', i === completed && completed < 3 && !['cancelled','failed'].includes(stage));
   }
   clearTimeout(slowTimer);
   if (['submitted','unknown','confirmed'].includes(stage)) slowTimer=setTimeout(()=>{
@@ -151,7 +151,9 @@ el('send').onclick=async()=>{
   }catch(e){
     sendError=e.message;el('error').textContent=sendError;
     // Only explicit pre-submission cancellation/denial is safe to unlock immediately.
-    if(!walletStarted || /^(program call cancelled|runtime access denied: program.call)$/.test(e.message)){
+    if(e.code==='NOT_SUBMITTED'){
+      pending=null;lockComposer(false);showProgress('failed','The wallet could not read your account counter. It stopped before signing or submitting. Your draft is saved; wait at least 30 seconds before trying again.');
+    }else if(!walletStarted || /^(program call cancelled|runtime access denied: program.call)$/.test(e.message)){
       pending=null;lockComposer(false);showProgress('cancelled','Your draft is kept. No transaction was submitted by this attempt.');
     }else showProgress('unknown','Submission could not be verified. Your draft is locked while we check for confirmation. Check status never sends another transaction.');
   }finally{

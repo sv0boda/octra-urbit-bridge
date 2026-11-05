@@ -18,7 +18,7 @@ try{
    const address='oct'+'A'.repeat(44);
    window.OctraCircle={context:{circle_id:'oct'+'B'.repeat(44)},async request(method,payload){
     if(method==='wallet.info')return {address};
-    if(method==='program.call'){window.testState.calls++;throw new Error('RPC HTTP 429');}
+    if(method==='program.call'){window.testState.calls++;throw new Error(window.testState.nonce?'cannot read account nonce':'RPC HTTP 429');}
     if(method!=='program.view')throw new Error('Unexpected bridge method');window.testState.views++;if(window.testState.failRead)throw new Error('RPC HTTP 429');
     if(payload.method==='get_reactions')return {result:'[]'};
     if(payload.method==='get_nickname')return {result:'Feedback Test'};
@@ -49,7 +49,13 @@ try{
  await page.evaluate(async()=>{window.testState.time=60000;window.testState.confirmed=true;await window.testPoll();});
  assert.equal(await page.locator('#body').inputValue(),'');assert.equal(await page.locator('#body').isDisabled(),false);
  assert.equal(await page.locator('#error').textContent(),'');assert.equal(await page.evaluate(()=>window.testState.calls),1);
+ await page.evaluate(()=>{window.testState.nonce=true;window.testState.confirmed=false;});
+ await page.locator('#body').fill('Keep this draft');await page.locator('#send').click();
+ await page.locator('#notice').filter({hasText:'Message not submitted'}).waitFor();
+ await page.waitForFunction(()=>!document.getElementById('send').disabled);
+ assert.equal(await page.locator('#body').isDisabled(),false);assert.equal(await page.locator('#body').inputValue(),'Keep this draft');
+ assert.equal(await page.locator('#send').textContent(),'Send message');assert.equal(await page.evaluate(()=>window.testState.calls),2);
  assert.deepEqual(errors,[]);
- const result={checkedAt:new Date().toISOString(),mode:'Synthetic wallet; zero live writes',checks:['Login rate limit pauses reads and automatically recovers','Send 429 keeps draft locked and displays pause','Status clicks during cooldown make no RPC calls','Later confirmation clears error without resubmission'],pageErrors:errors};
+ const result={checkedAt:new Date().toISOString(),mode:'Synthetic wallet; zero live writes',checks:['Login rate limit pauses reads and automatically recovers','Send 429 keeps draft locked and displays pause','Status clicks during cooldown make no RPC calls','Later confirmation clears error without resubmission','Nonce-read failure leaves draft editable and never retries the call'],pageErrors:errors};
  writeFileSync(root+'evidence/circle-rate-limit-check.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));
 }finally{await browser?.close();await new Promise(r=>server.close(r));}

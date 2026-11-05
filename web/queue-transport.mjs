@@ -4,12 +4,12 @@ import {decodeReactions} from '../shared/reactions.mjs';
 
 // The wallet host binds every call/view to the currently opened Circle.
 // This adapter supplies no RPC, relayer URL, ship credentials or target override.
-export function queueTransport({bridge, visibleAfter = 0, now = Date.now, wait = ms => new Promise(resolve => setTimeout(resolve, ms))}) {
+export function queueTransport({bridge, visibleAfter = 0, spacing = 500, now = Date.now, wait = ms => new Promise(resolve => setTimeout(resolve, ms))}) {
   visibleAfter = queueInteger(visibleAfter);
   if (!bridge || typeof bridge.request !== 'function') throw new Error('Open this app inside an Octra Circle');
   const wallet = reportedWalletReader(bridge);
   let reads = Promise.resolve();
-  let blockedUntil = 0, backoff = 30000, nickname;
+  let blockedUntil = 0, backoff = 30000, nextRead = 0, nickname;
   const messagesById = new Map();
   const limited = () => Object.assign(new Error('Devnet is rate limited. Checking again shortly; no message will be resent.'), {code:'RATE_LIMITED'});
   const guard = () => {if(now() < blockedUntil)throw limited();};
@@ -22,6 +22,8 @@ export function queueTransport({bridge, visibleAfter = 0, now = Date.now, wait =
     guard();
     for(let attempt=0;;attempt++){
       try{
+        const delay=nextRead-now();if(delay>0)await wait(delay);
+        guard();nextRead=now()+spacing;
         const response = await bridge.request('program.view', {method, params});
         if (!response || !Object.hasOwn(response, 'result')) throw new Error('Invalid Circle view response');
         return response.result;
@@ -101,7 +103,13 @@ export function queueTransport({bridge, visibleAfter = 0, now = Date.now, wait =
           method: 'send', params: [body, nickname, root, requestId], ou: '1000',
         });
         return {state: 'submitted', requestId, submission};
-      } catch(error) {throw rateLimit(error);} finally { sending = false; }
+      } catch(error) {
+        // Official webcli raises this before constructing, signing or submitting a call.
+        if(error.message==='cannot read account nonce'){
+          blockedUntil=now()+30000;error.code='NOT_SUBMITTED';
+        }
+        throw rateLimit(error);
+      } finally { sending = false; }
     },
   };
 }

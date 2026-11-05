@@ -43,6 +43,7 @@ try {
  await page.evaluate(()=>window.allowWallet());await page.locator('#connection').filter({hasText:'2 of 2'}).waitFor();
  await page.evaluate(()=>window.allowRoom());await page.locator('#connection').filter({hasText:'Access granted. Loading'}).waitFor();
  await page.screenshot({path:root+'evidence/circle-loading-preview.png'});
+ await page.waitForFunction(()=>typeof window.loadRoom==='function');
  await page.evaluate(()=>window.loadRoom());await page.locator('#composer').waitFor({state:'visible'});
  assert.equal(await page.locator('.reaction').textContent(),'👍 1');
  await page.locator('#body').fill('Hello from Octra');await page.locator('#send').click();
