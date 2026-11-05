@@ -1,0 +1,16 @@
+{
+  "hostPlanet": "~zod",
+  "group": "~zod/social-bridge",
+  "channel": "chat/~zod/social-bridge",
+  "groupTitle": "Social Bridge",
+  "channelTitle": "Bridge chat",
+  "privacy": "public",
+  "transport": "native-devnet-program-queue",
+  "guestIdentity": "committed-transaction-caller",
+  "gatewayMoon": "~nec",
+  "postingEnabled": false,
+  "circleId": null,
+  "network": "devnet",
+  "moonOrigin": "http://127.0.0.1:8080",
+  "visibleAfter": 0
+}

@@ -1,0 +1,53 @@
+import assert from 'node:assert/strict';
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
+import {createLocalServer} from '../src/server.mjs';
+
+const playwrightPath=process.env.ALPHA_PLAYWRIGHT || new URL('../node_modules/playwright/index.mjs',import.meta.url).pathname;
+const {chromium}=await import(pathToFileURL(playwrightPath));
+const executablePath=process.env.ALPHA_CHROMIUM || undefined;
+const app=createLocalServer();const errors=[];const checks=[];
+await new Promise((resolve,reject)=>{app.server.once('error',reject);app.server.listen(0,'127.0.0.1',resolve);});
+const url='http://127.0.0.1:'+app.server.address().port;
+let browser;
+const waitForText=(page,text)=>page.waitForFunction(text=>document.querySelector('#messages').textContent.includes(text),text);
+try {
+ browser=await chromium.launch({headless:true,executablePath});
+ const a=await browser.newContext({viewport:{width:1280,height:900}}), b=await browser.newContext({viewport:{width:1280,height:900}});
+ const alice=await a.newPage(),bob=await b.newPage();
+ for(const page of [alice,bob]) {page.on('pageerror',e=>{errors.push(e.message);console.log('Page error:',e.stack);});page.on('console',m=>{if(m.type()==='error')console.log('Browser:',m.text());});}
+ await Promise.all([alice.goto(url),bob.goto(url)]);
+ assert.deepEqual(errors,[]);
+ await alice.getByRole('button',{name:'Try as Alice'}).click();await bob.getByRole('button',{name:'Try as Bob'}).click();
+ await alice.getByRole('textbox',{name:'Nickname',exact:true}).fill('River');await alice.getByRole('button',{name:'Save name'}).click();
+ await bob.getByRole('textbox',{name:'Nickname',exact:true}).fill('Juniper');await bob.getByRole('button',{name:'Save name'}).click();
+ await alice.getByRole('textbox',{name:'Message',exact:true}).fill('Hello from Octra! Is this running through a moon?');await alice.getByRole('button',{name:'Send message'}).click();
+ await waitForText(bob,'Hello from Octra!');
+ const root=bob.locator('article').filter({has:bob.locator('.body',{hasText:'Hello from Octra!'})});await root.getByRole('button',{name:'Reply',exact:true}).click();
+ await bob.getByRole('textbox',{name:'Message',exact:true}).fill('Two guests, one room. Nice to meet you.');await bob.getByRole('button',{name:'Send message'}).click();
+ await waitForText(alice,'Two guests, one room.');
+ await alice.locator('article').filter({has:alice.locator('.body',{hasText:'Hello from Octra!'})}).getByRole('button',{name:'Reply',exact:true}).click();
+ await alice.getByRole('textbox',{name:'Simulated Urbit message'}).fill('Welcome! One gateway moon brings this room into Tlon, with a separate label for each guest.');await alice.getByRole('button',{name:'Simulate Urbit message'}).click();
+ await waitForText(bob,'One gateway moon');
+ checks.push('Two isolated browser sessions exchange posts and threaded replies; simulated Urbit replies arrive.');
+ await alice.getByRole('button',{name:'Cancel reply'}).click();await alice.reload();await waitForText(alice,'Two guests, one room.');
+ assert.equal(await alice.getByRole('textbox',{name:'Nickname',exact:true}).inputValue(),'River');
+ await alice.getByRole('button',{name:'Switch guest'}).click();await alice.getByRole('button',{name:'Try as Alice'}).click();await waitForText(alice,'Two guests, one room.');
+ assert.equal(await alice.getByRole('textbox',{name:'Nickname',exact:true}).inputValue(),'River');checks.push('Nickname and history survive reload, logout and re-entry.');
+ mkdirSync(resolve('evidence'),{recursive:true});await alice.screenshot({path:resolve('evidence/desktop.png'),fullPage:true});
+ await alice.setViewportSize({width:390,height:844});await alice.locator('#feed').evaluate(el=>{el.style.scrollBehavior='auto';el.scrollTop=el.scrollHeight;});await alice.screenshot({path:resolve('evidence/mobile.png'),fullPage:true});
+ assert.ok(await alice.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));checks.push('Desktop and 390px mobile layouts render without horizontal overflow.');
+ await alice.setViewportSize({width:1280,height:900});
+ let intercepted=false;
+ await alice.route('**/api/messages',async route=>{if(intercepted)return route.continue();intercepted=true;await route.fetch();await route.abort('failed');});
+ await alice.getByRole('textbox',{name:'Message',exact:true}).fill('Retry after losing the HTTP response');await alice.getByRole('button',{name:'Send message'}).click();
+ await alice.waitForFunction(()=>document.querySelector('#error').textContent.length>0);
+ await alice.getByRole('button',{name:'Send message'}).click();await alice.waitForFunction(()=>document.querySelector('#body').value==='');await waitForText(alice,'Retry after losing the HTTP response');
+ assert.equal(app.store.db.prepare('SELECT COUNT(*) AS n FROM messages WHERE body=?').get('Retry after losing the HTTP response').n,1);checks.push('Losing a successful send response and retrying creates exactly one message.');
+ const injection='<img src=x onerror="window.alphaXss=true">';await bob.getByRole('textbox',{name:'Message',exact:true}).fill(injection);await bob.getByRole('button',{name:'Send message'}).click();await waitForText(alice,injection);
+ assert.equal(await alice.locator('#messages img').count(),0);assert.equal(await alice.evaluate(()=>window.alphaXss),undefined);checks.push('Message markup displays as literal text.');
+ assert.deepEqual(errors,[]);
+ writeFileSync(resolve('evidence/browser-check.json'),JSON.stringify({checkedAt:new Date().toISOString(),checks,pageErrors:errors,mode:'isolated local simulation; no live networks'},null,2)+'\n');
+ console.log(JSON.stringify({passed:checks.length,checks,pageErrors:errors},null,2));
+} finally {await browser?.close();await app.close();}

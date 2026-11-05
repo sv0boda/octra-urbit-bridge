@@ -1,0 +1,33 @@
+# Local credentials and runtime state (never version).
+.private/
+.env
+.env.*
+!.env.example
+*.pk8
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite*
+*.db
+*.log
+wallet.json
+wallet.oct
+web-login.txt
+moon-web-login.txt
+
+# Generated artifacts, operational receipts and upstream research copies.
+/build/
+/evidence/
+/research/
+/OPERATIONS.md
+node_modules/
+.DS_Store
+__pycache__/
+*.pyc
+
+# Operator-generated deployment metadata; examples are safe to publish.
+/config/operator.json
+/config/target.json
+/playwright-report/
+/test-results/

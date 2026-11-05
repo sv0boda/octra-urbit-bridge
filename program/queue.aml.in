@@ -1,0 +1,141 @@
+contract OctraTlonQueue {
+  state {
+    head: int
+    authors: map[int]string
+    names: map[int]string
+    bodies: map[int]string
+    parents: map[int]int
+    kinds: map[int]int
+    sent_epochs: map[int]int
+    native_ids: map[int]string
+    profiles: map[address]string
+    requests: map[address]map[string]int
+    imported: map[string]int
+    last_epoch: map[address]int
+    epoch_count: map[address]int
+    suspended: map[address]int
+    reaction_snapshot: string
+    reaction_revision: int
+  }
+
+  private fn bridge_only() {
+    require(to_string(caller) == "__BRIDGE_ADDRESS__", "bridge only")
+    require(value == 0, "no attached OCT")
+  }
+
+  private fn root_of(parent: int): int {
+    require(parent >= 0 && parent <= self.head, "unknown parent")
+    if parent > 0 {
+      if self.parents[parent] > 0 { return self.parents[parent] }
+    }
+    return parent
+  }
+
+  fn send(body: string, nickname: string, parent: int, request_id: string): int {
+    require(value == 0, "no attached OCT")
+    require(caller == origin, "direct wallet call required")
+    require(self.suspended[caller] == 0, "guest suspended")
+    require(len(body) > 0 && len(body) <= 2000, "message length")
+    require(len(nickname) > 0 && len(nickname) <= 24, "nickname length")
+    require(len(request_id) > 0 && len(request_id) <= 64, "request ID length")
+    let root = root_of(parent)
+    let previous = self.requests[caller][request_id]
+    if previous > 0 {
+      require(self.bodies[previous] == body, "request ID conflict")
+      require(self.names[previous] == nickname, "request ID conflict")
+      require(self.parents[previous] == root, "request ID conflict")
+      return previous
+    }
+    require(self.head < 10000, "alpha room full")
+    if self.last_epoch[caller] != epoch {
+      self.last_epoch[caller] = epoch
+      self.epoch_count[caller] = 0
+    }
+    require(self.epoch_count[caller] < 3, "epoch message limit")
+    self.epoch_count[caller] += 1
+    self.head += 1
+    let id = self.head
+    self.authors[id] = to_string(caller)
+    self.names[id] = nickname
+    self.bodies[id] = body
+    self.parents[id] = root
+    self.kinds[id] = 1
+    self.sent_epochs[id] = epoch
+    self.native_ids[id] = ""
+    self.profiles[caller] = nickname
+    self.requests[caller][request_id] = id
+    return id
+  }
+
+  fn publish_tlon(native_id: string, ship: string, body: string, parent: int): int {
+    bridge_only()
+    require(len(native_id) > 0 && len(native_id) <= 100, "native ID length")
+    require(len(ship) > 1 && len(ship) <= 120, "ship length")
+    require(substr(ship, 0, 1) == "~", "ship name")
+    require(len(body) > 0 && len(body) <= 2000, "message length")
+    let root = root_of(parent)
+    let previous = self.imported[native_id]
+    if previous > 0 {
+      require(self.kinds[previous] == 2, "native ID conflict")
+      require(self.authors[previous] == ship, "native ID conflict")
+      require(self.bodies[previous] == body, "native ID conflict")
+      require(self.parents[previous] == root, "native ID conflict")
+      return previous
+    }
+    require(self.head < 10000, "alpha room full")
+    self.head += 1
+    let id = self.head
+    self.authors[id] = ship
+    self.names[id] = ship
+    self.bodies[id] = body
+    self.parents[id] = root
+    self.kinds[id] = 2
+    self.sent_epochs[id] = epoch
+    self.native_ids[id] = native_id
+    self.imported[native_id] = id
+    return id
+  }
+
+  fn ack_delivery(id: int, native_id: string): bool {
+    bridge_only()
+    require(id > 0 && id <= self.head && self.kinds[id] == 1, "unknown outgoing post")
+    require(len(native_id) > 0 && len(native_id) <= 100, "native ID length")
+    require(self.imported[native_id] == 0 || self.imported[native_id] == id, "native ID conflict")
+    require(self.native_ids[id] == "" || self.native_ids[id] == native_id, "already acknowledged")
+    self.native_ids[id] = native_id
+    self.imported[native_id] = id
+    return true
+  }
+
+  fn suspend_guest(guest: address, suspended: int): bool {
+    bridge_only()
+    require(suspended == 0 || suspended == 1, "invalid suspension")
+    self.suspended[guest] = suspended
+    return true
+  }
+
+  view fn get_head(): int { return self.head }
+  fn sync_reactions(expected_revision: int, snapshot: string): bool {
+    bridge_only()
+    require(len(snapshot) > 0 && len(snapshot) <= 16000, "reaction snapshot length")
+    require(self.reaction_revision == expected_revision, "reaction revision changed")
+    self.reaction_snapshot = snapshot
+    self.reaction_revision += 1
+    return true
+  }
+  view fn get_reactions(): string {
+    if self.reaction_revision == 0 { return "[]" }
+    return self.reaction_snapshot
+  }
+  view fn get_reaction_revision(): int { return self.reaction_revision }
+  view fn get_bridge(): string { return "__BRIDGE_ADDRESS__" }
+  view fn get_nickname(guest: address): string {
+    if self.epoch_count[guest] == 0 { return "" }
+    return self.profiles[guest]
+  }
+  view fn get_request(guest: address, request_id: string): int { return self.requests[guest][request_id] }
+  view fn get_message(id: int): (int, string, string, string, int, int, string) {
+    require(id > 0 && id <= self.head, "unknown message")
+    return (self.kinds[id], self.authors[id], self.names[id], self.bodies[id], self.parents[id], self.sent_epochs[id], self.native_ids[id])
+  }
+}

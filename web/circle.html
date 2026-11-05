@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Urbit Social Bridge · Octra</title>
+<style>
+:root{color-scheme:light;--ink:#111;--muted:#666;--line:#dedede;--paper:#fff;--green:#335c49;--status:#eff5ed;--status-line:#d2e1ce;--octra:#3b567f}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font:15px/1.6 system-ui,sans-serif;--line:#dedede;--muted:#707070;--ink:#111}
+button,input,textarea{font:inherit}
+button{padding:9px 16px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer}
+button:hover:not(:disabled){background:#f3f3f3}
+button:disabled{opacity:.65;cursor:default}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.primary{background:#111;border-color:#111;color:#fff}
+.primary:hover:not(:disabled){background:#333}
+main{max-width:1160px;margin:auto;padding:30px 28px}
+header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:24px;gap:20px}
+h1{font:500 42px/1.15 Georgia,serif;margin:9px 0 16px;font-size:40px;margin-bottom:14px}
+.octra{color:var(--octra)}
+.cross{color:#888;font-weight:400}
+p{margin:8px 0}
+.eyebrow,.tag{font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+.eyebrow{color:var(--muted)}
+.tag{border:1px solid var(--line);border-radius:20px;padding:7px 11px;white-space:nowrap;margin-top:4px;background:#fafafa}
+.layout{display:grid;grid-template-columns:244px minmax(0,1fr);gap:0;margin-top:26px;align-items:stretch;border:1px solid #d8d8d8;border-radius:12px;overflow:hidden}
+aside{color:var(--muted);font-size:12px;line-height:1.75;padding:24px 22px;background:#fafafa;border-right:1px solid #dedede}
+aside h2{color:var(--ink);font-size:14px;margin:0 0 12px;line-height:1.5}
+aside p{margin:0 0 24px;margin-bottom:22px}
+aside strong{color:var(--ink);font-weight:600}
+.aside-label{display:block;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);margin-bottom:6px}
+.wallet-card{border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:22px;background:#fff;border-color:#dedede}
+.wallet-card .aside-label{color:var(--muted)}
+#wallet{margin:0;overflow-wrap:anywhere;font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
+.room{min-width:0;overflow:hidden;display:flex;flex-direction:column;padding:0;min-height:640px;background:#fff;border:0;border-radius:0}
+#connection{display:inline-block;max-width:100%;margin:0;padding:7px 12px;border:1px solid var(--status-line);border-radius:8px;background:var(--status);color:var(--green);font-size:12px;overflow-wrap:anywhere}
+#messages{height:46vh;min-height:280px;overflow:auto;scroll-behavior:smooth;padding:4px 24px 10px;flex:none}
+article{padding:22px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+article.reply{padding-left:16px;border-left:2px solid var(--line)}
+.byline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}
+.source,.delivery{font-size:11px;color:var(--muted)}
+.body{white-space:pre-wrap;margin:9px 0;font-size:14px}
+.reply-button{padding:3px 8px;font-size:12px}
+.reply-context{font-size:12px;color:var(--muted)}
+.reactions{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.reaction{background:#f5f5f5;border:1px solid var(--line);border-radius:16px;padding:2px 9px;font-size:13px}
+label{display:block;font-size:13px;margin-top:14px}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:100px}
+input:disabled,textarea:disabled{background:#f3f3f3;color:var(--muted)}
+.actions{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:14px}
+.small{font-size:12px;color:var(--muted)}
+#composer>.small{margin-top:14px;line-height:1.8}
+#error{color:var(--ink);font-size:13px;white-space:pre-wrap}
+#error:not(:empty){border-left:3px solid var(--ink);padding:10px 12px;margin:14px 0;background:#f5f5f5}
+#notice{font-size:13px;color:var(--green)}
+#replying{font-size:12px;margin-top:10px}
+.empty{color:var(--muted);text-align:center;padding:60px 20px}
+#login-help:not(:empty){padding:12px 14px;margin:14px 0;background:var(--status);border:1px solid var(--status-line);border-radius:8px;color:var(--green)}
+#send-progress{margin:16px 24px;padding:16px;border:1px solid var(--status-line);border-radius:10px;background:var(--status);font-size:13px}
+#send-steps{display:flex;flex-wrap:wrap;gap:8px 22px;padding-left:0;list-style:none;counter-reset:step;color:var(--muted)}
+#send-steps li{counter-increment:step}
+#send-steps li::before{content:counter(step)". "}
+#send-steps .done{color:var(--green)}
+#send-steps .done::before{content:"✓  "}
+#send-steps .current{font-weight:700;color:var(--ink)}
+#send-detail{margin:6px 0}
+#transaction-url{font-size:11px}
+#transaction a{color:var(--ink)}
+.hidden{display:none!important}
+aside .detail>p{padding-top:16px;margin-bottom:16px;border-top:1px solid #e2e2e2}
+.wallet-card #wallet{font-size:11px}
+.room-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 24px;border-bottom:1px solid var(--line);background:#fff}
+.room-head strong{font-size:14px;font-weight:600}
+.room-head small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.room-state{font-size:11px;color:var(--muted);white-space:nowrap}
+.room-state.online{background:var(--status);border:1px solid var(--status-line);padding:4px 9px;border-radius:20px;color:var(--green)}
+.entry{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 38px;min-height:480px}
+.entry .gate-mark{width:50px;height:50px;display:grid;place-items:center;font:24px Georgia,serif;border:1px solid var(--line);border-radius:12px;margin-bottom:26px;background:#fafafa;color:#111;border-color:#dedede}
+.entry h2{font:500 28px/1.3 Georgia,serif;max-width:350px;margin:0 0 14px;color:var(--ink)}
+.entry p{max-width:330px;font-size:13px;color:var(--muted);margin:0 0 26px;line-height:1.8}
+.entry #connect{display:block;margin:0 auto;padding:12px 24px;font-size:13px}
+.entry .entry-note{font-size:11px;margin:16px 0 0;max-width:320px;margin-bottom:0}
+.room-foot{padding:13px 24px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-align:center;background:#fafafa}
+#composer{padding:18px 24px;border-top:1px solid var(--line);background:#fafafa}
+#composer label{margin-top:12px;font-size:12px}
+#composer textarea{min-height:86px;margin-top:6px}
+#composer .actions{margin-top:10px}
+#composer .small{font-size:11px}
+#composer .primary{font-size:12px;padding:8px 18px}
+#composer p{font-size:11px;color:var(--muted);margin:14px 0 0}
+.reply{margin-left:14px;border-left-color:#dedede}
+.delivery{color:var(--green)}
+#composer label:first-child{margin-top:0}
+.room>#error:not(:empty){margin:14px 24px}
+.entry #login-help:empty{display:none}
+.entry #login-help:not(:empty){margin:18px 0 0;padding:10px 14px;font-size:12px;color:var(--green);max-width:360px}
+@media(max-width:680px){main{padding:22px 16px}.layout{grid-template-columns:1fr;gap:20px;margin-top:22px}aside{border-bottom:1px solid var(--line);padding-bottom:20px}aside .detail{display:none}aside p{margin-bottom:14px}.wallet-card{margin-top:16px;padding:10px 14px}h1{font-size:32px}.actions{align-items:flex-start}#messages{height:42vh}header{gap:10px}.tag{font-size:9px;padding:6px 8px}.eyebrow{font-size:10px}}
+@media(max-width:680px){main{padding:22px 16px}h1{font-size:30px}.layout{grid-template-columns:1fr;margin-top:20px}aside{padding:18px}.wallet-card{margin-top:16px}aside p{margin-bottom:12px}.room{min-height:540px}.room-head{padding:16px 18px}.room-head small{max-width:190px}.room-state{font-size:10px}.entry{padding:36px 20px;min-height:390px}.entry h2{font-size:25px}.entry p{font-size:12px}.room-foot{padding:12px 18px;font-size:10px}#messages{padding:0 18px 12px}#composer{padding:18px}.body{font-size:13px}}
+@media(max-width:680px){aside{border-right:0;border-bottom:1px solid #dedede}.layout{gap:0}}
+@media(max-width:680px){#messages{height:42vh;min-height:260px}#send-progress{margin:14px 18px}.room>#error:not(:empty){margin:14px 18px}}
+</style></head><body><main>
+<header><div><div class="eyebrow">Urbit Social Bridge</div><h1><span class="octra">Octra</span> <span class="cross">×</span> Urbit</h1><p id="connection" role="status" aria-live="polite">Public devnet · Ready to connect</p></div><span class="tag">Devnet alpha</span></header>
+<div class="layout"><aside>
+<h2>A small window into Urbit</h2>
+<p>Chat with people on Urbit using your Octra wallet.</p>
+<div class="detail">
+<p><span class="aside-label">The room</span><strong>Octra Social Bridge / Bridge chat</strong><br>Your messages appear in the Tlon group.</p>
+<p><span class="aside-label">Your identity</span>Your nickname follows your wallet.<br>Urbit participants appear with their ship names.</p>
+<p><span class="aside-label">Public devnet</span>Messages and wallet addresses are public.</p>
+<p><span class="aside-label">Sending</span>Your wallet confirms each send.<br>The current fee is <strong>0.001 devnet OCT</strong>.</p>
+</div>
+<div class="wallet-card"><span class="aside-label">Your wallet</span><p id="wallet">Not connected</p></div>
+</aside>
+<section class="room" aria-label="Social bridge chat"><div class="room-head"><div><strong>Bridge chat</strong><small>Octra Social Bridge · Tlon</small></div><span id="room-state" class="room-state">Not connected</span></div>
+<div id="entry" class="entry"><div class="gate-mark" aria-hidden="true">↔</div><h2>A conversation across two networks.</h2><p>Meet people on Urbit, right from your Octra wallet.</p><button id="connect" class="primary">Enter with Octra wallet</button><p class="entry-note">Your wallet will ask for your address<br>and permission to read the room.</p><p id="login-help" class="small" role="status"></p></div>
+<div id="entry-foot" class="room-foot">Reading is free · Sending costs 0.001 devnet OCT</div>
+<div id="error" role="alert"></div>
+<div id="messages" class="hidden" aria-live="polite"></div>
+<div id="send-progress" class="hidden" role="status" aria-live="polite"><strong id="notice"></strong><ol id="send-steps"><li>Wallet approval</li><li>Devnet confirmation</li><li>Tlon delivery</li></ol><p id="send-detail"></p><div id="transaction" class="hidden"><a id="transaction-link" target="_blank" rel="noopener noreferrer">View transaction on Octrascan ↗</a><label for="transaction-url">If the wallet blocks opening a link, copy this address into your browser:</label><input id="transaction-url" readonly aria-label="Transaction explorer address"></div></div>
+<div id="composer" class="hidden"><label for="nickname">Nickname</label><input id="nickname" maxlength="24" autocomplete="off" placeholder="Choose a name"><div id="replying" class="hidden"></div><label for="body">Message</label><textarea id="body" maxlength="2000" placeholder="Say hello, or ask about Urbit…"></textarea><div class="actions"><span class="small">Devnet fees apply.<br>Identical messages in the same thread count as retries.</span><button id="send" class="primary">Send message</button></div><p class="small">Wallet prompts: <strong>amount → 0 → Continue</strong>, then <strong>confirm program call → your PIN → Sign</strong>. Enter your PIN only in the wallet dialog.</p><p class="small">Confirmation and Tlon delivery may take a little time.</p></div></section></div>
+</main><script type="module">/*__APP__*/</script></body></html>

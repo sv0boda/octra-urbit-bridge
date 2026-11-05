@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Octra × Tlon · Alpha</title>
+<style>
+:root{color-scheme:light;--ink:#263a38;--muted:#667773;--paper:#f6f4ee;--line:#dedfd6;--green:#31594d;--mint:#e6ede5;--orange:#bf5d37}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:9px 14px;background:#fff;color:var(--ink)}button:hover{background:var(--mint)}button:disabled{opacity:.5;cursor:default}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--green);outline-offset:3px}.primary{background:var(--green);color:#fff;border-color:var(--green)}.primary:hover{background:#25463b}.muted{color:var(--muted)}.small{font-size:12px}.tag{font:600 11px/1.3 system-ui;text-transform:uppercase;letter-spacing:.09em;background:#e8dfc9;color:#645836;border-radius:20px;padding:6px 10px;white-space:nowrap}
+.shell{max-width:1440px;height:100dvh;min-height:580px;margin:auto;display:grid;grid-template-columns:262px minmax(0,1fr)}aside{padding:30px 24px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:26px;background:#eeeee6}.brand{display:flex;align-items:center;gap:10px;font-weight:650;letter-spacing:-.5px}.symbol{display:grid;place-items:center;background:var(--green);color:#f5f1e7;border-radius:50%;width:35px;height:35px;font-size:23px;font-weight:300}.eyebrow{font:600 10px/1.4 system-ui;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}h1,h2,p{margin:0}h1{font:500 24px/1.2 Georgia,serif}h2{font-size:14px}.room-link{background:var(--mint);border:1px solid #d1dacc;padding:13px;border-radius:9px;display:flex;gap:10px;align-items:center}.room-link span:first-child{font-size:23px;color:var(--green)}.room-link small{display:block;color:var(--muted);font-size:11px}.aside-note{font-size:13px;color:var(--muted);padding-top:8px}.account{border-top:1px solid var(--line);padding-top:18px}.account input{width:100%;margin:10px 0 8px}.guest-id{font-size:11px;font-family:monospace}.account-actions{display:flex;gap:6px;flex-wrap:wrap}.account-actions button{font-size:12px;padding:7px 10px}.fixture{margin-top:auto;border-top:1px solid var(--line);padding-top:18px}.fixture p{font-size:12px;margin:8px 0 10px;color:var(--muted)}.fixture textarea{width:100%;min-height:72px;font-size:12px;margin-bottom:8px}.fixture button{font-size:12px;width:100%}
+main{min-width:0;display:flex;flex-direction:column;height:100%;position:relative}header{padding:25px 35px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line)}header p{font-size:12px;color:var(--muted);margin-top:6px}.notice{padding:10px 35px;font-size:12px;background:#eee8d9;border-bottom:1px solid #e2dbc8;color:#665b41}.feed{flex:1;overflow:auto;padding:24px 35px;scroll-behavior:smooth;min-height:0}.intro{margin:8px auto 28px;padding:20px 0 22px;max-width:680px;border-bottom:1px solid var(--line)}.intro h2{font:500 29px/1.3 Georgia,serif;margin-bottom:9px}.intro p{font-size:14px;color:var(--muted);max-width:560px}.message{max-width:760px;margin:0 auto 22px;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px}.avatar{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:#e5d8ce;font-size:12px;font-weight:650}.urbit .avatar{background:var(--mint);color:var(--green)}.byline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:5px}.byline strong{font-size:14px}.byline time{color:var(--muted);font-size:11px}.source{font-size:10px;color:var(--muted)}.body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;font-size:14px}.message-footer{display:flex;align-items:center;gap:10px;margin-top:6px;color:var(--muted);font-size:10px}.reply-button{background:none;border:0;padding:2px 0;font-size:11px;color:var(--green)}.thread-ref{font-size:11px;color:var(--muted);border-left:2px solid #bbc9bb;padding-left:9px;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.composer{padding:0 35px 24px}.compose-box{border:1px solid #cbd3c8;border-radius:13px;background:#fff;padding:14px}.compose-box textarea{border:0;padding:0;width:100%;min-height:56px;max-height:150px;resize:vertical;background:transparent}.compose-box textarea:focus{outline:none}.compose-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}.replying{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:12px;color:var(--green)}.replying button{padding:0 4px;border:0;font-size:15px}.footnote{text-align:center;font-size:10px;color:var(--muted);margin-top:9px}.error{color:#a53d2d;min-height:22px;font-size:12px;padding-top:4px}.signin{position:absolute;inset:0;background:var(--paper);display:grid;place-items:center;padding:35px}.signin-card{max-width:470px}.signin-card .tag{display:inline-block;margin-bottom:28px}.signin-card h1{font:500 48px/1.1 Georgia,serif;letter-spacing:-1.5px;margin-bottom:20px}.signin-card p{color:var(--muted);margin-bottom:24px}.guest-buttons{display:flex;gap:10px;margin-bottom:18px}input,textarea{background:#fff;border:1px solid var(--line);border-radius:7px;padding:9px 10px;color:var(--ink)}[hidden]{display:none!important}
+@media(max-width:750px){.shell{grid-template-columns:1fr;height:auto;min-height:100dvh}aside{border-right:0;border-bottom:1px solid var(--line);padding:15px 20px;gap:12px}.brand{font-size:14px}.symbol{width:28px;height:28px}.navigation,.aside-note,.fixture{display:none}.account{border:0;padding:0}.account form{display:flex;gap:6px;align-items:center}.account input{margin:0;min-width:0;flex:1}.account-actions{flex-wrap:nowrap}.account .eyebrow,.guest-id{display:none}main{height:calc(100dvh - 120px);min-height:500px}header{padding:18px 20px}header h1{font-size:22px}.notice{padding:9px 20px}.feed{padding:18px 20px}.composer{padding:0 16px 15px}.signin{padding:25px}.signin-card h1{font-size:39px}.tag{font-size:9px}.compose-row .small{font-size:10px}}
+.shell{grid-template-rows:minmax(0,1fr)}aside{min-height:0;overflow:auto}main{min-height:0}
+@media(max-width:750px){.shell{grid-template-rows:auto minmax(0,1fr)}main{min-height:500px}.compose-row button{flex-shrink:0}.compose-row .small{max-width:180px}}
+</style>
+</head>
+<body>
+<div class="shell">
+<aside>
+ <div class="brand"><span class="symbol" aria-hidden="true">✳</span> Octra × Tlon</div>
+ <nav class="navigation" aria-label="Rooms"><div class="eyebrow">A little window into Urbit</div><div class="room-link"><span>#</span><div><strong>Welcome room</strong><small>One room. One gateway moon.</small></div></div></nav>
+ <p class="aside-note">Meet the community, ask a question, and get a feel for Tlon.</p>
+ <section class="account" id="account" hidden><div class="eyebrow">Your guest profile</div><div class="guest-id muted" id="guest-id"></div><form id="profile-form"><label for="nickname" class="small" hidden>Nickname</label><input id="nickname" aria-label="Nickname" maxlength="24" required autocomplete="off"><div class="account-actions"><button type="submit">Save name</button><button type="button" id="leave">Switch guest</button></div></form></section>
+ <section class="fixture" id="fixture" hidden><div class="eyebrow">Local test controls</div><h2>Try the other side</h2><p>Simulate a reply from ~zod. Uses the selected thread, or posts to the room.</p><textarea id="fixture-body" aria-label="Simulated Urbit message" maxlength="2000">Hey, welcome! What brought you to Urbit?</textarea><button id="fixture-send">Simulate Urbit message</button></section>
+</aside>
+<main>
+ <header><div><h1>Welcome room</h1><p id="connection">Local alpha · simulated Tlon channel</p></div><span class="tag">Local simulation</span></header>
+ <div class="notice">Test guests and messages only. This build is not connected to Octra or a live Urbit ship.</div>
+ <section class="feed" id="feed" aria-label="Conversation"><div class="intro"><h2>Come in. Say hello.</h2><p>Your nickname stays with you when you return. Everyone in this room shares the same public conversation.</p></div><div id="messages"></div></section>
+ <div class="composer"><form class="compose-box" id="compose"><div class="replying" id="replying" hidden><span id="reply-label"></span><button type="button" id="cancel-reply" aria-label="Cancel reply">×</button></div><textarea id="body" aria-label="Message" placeholder="Say hello to the room…" maxlength="2000" required></textarea><div class="compose-row"><span class="small muted">Public room · Enter to send, Shift + Enter for a new line</span><button class="primary" id="send" type="submit">Send message ↗</button></div></form><div class="error" id="error" role="status" aria-live="polite"></div><p class="footnote">Guests keep their own identity. Tlon sees one gateway ship with a guest label on each message.</p></div>
+ <section class="signin" id="signin" aria-label="Choose a test guest"><div class="signin-card"><span class="tag">Alpha 0.1 · Local simulation</span><h1>A familiar hello.<br>A different network.</h1><p>A small doorway from Octra into a Tlon community. Try the guest experience here before we connect a real Circle and gateway moon.</p><div class="guest-buttons"><button class="primary" data-persona="alice">Try as Alice</button><button data-persona="bob">Try as Bob</button></div><div class="small muted">Use a second browser profile or private window to test two guests at once. These are test identities, not wallet logins.</div><div class="error" id="login-error" role="status"></div></div></section>
+</main>
+</div>
+<script nonce="SCRIPT_NONCE">
+/* BOOTSTRAP */
+const $ = id => document.getElementById(id);
+let guest = null, messages = [], replyTo = null, sending = false, generation = 0, signature = '', retry = null, refreshing = false;
+async function api(path, body) {
+ const response = await fetch('/api/' + path, {method: body === undefined ? 'GET' : 'POST', credentials:'same-origin', headers: body === undefined ? {} : {'Content-Type':'application/json','X-Alpha-Csrf':window.alphaBootstrap.csrf}, ...(body === undefined ? {} : {body:JSON.stringify(body)})});
+ const data = await response.json(); if (!response.ok) { const error = new Error(data.error || 'Request failed'); error.status=response.status; throw error; } return data;
+}
+function error(e) { $('error').textContent=e?.message || ''; }
+function setGuest(next) {
+ const changed = guest?.id !== next?.id; guest=next; $('signin').hidden=!!guest; $('account').hidden=!guest; $('fixture').hidden=!guest;
+ if (guest) { $('guest-id').textContent='Guest '+guest.id.slice(0,6)+' · local test identity'; if (changed || document.activeElement !== $('nickname')) $('nickname').value=guest.nickname; }
+ if(changed) { signature=''; retry=null; $('body').value=''; selectReply(null); }
+}
+function node(tag, cls, value) { const el=document.createElement(tag); if(cls) el.className=cls; if(value!==undefined) el.textContent=value; return el; }
+function render() {
+ const next=JSON.stringify(messages); if(next===signature) return; signature=next;
+ const feed=$('feed'), atBottom=feed.scrollHeight-feed.scrollTop-feed.clientHeight<90;
+ const fragment=document.createDocumentFragment();
+ for(const m of messages) {
+  const row=node('article','message '+(m.source==='urbit'?'urbit':'octra')); row.dataset.seq=m.seq;
+  row.append(node('div','avatar',m.source==='urbit'?'~':m.nickname.slice(0,2).toUpperCase()));
+  const content=node('div'); const byline=node('div','byline'); byline.append(node('strong','',m.nickname),node('span','source',m.source==='urbit'?'URBIT FIXTURE':'GUEST · '+m.guest_id.slice(0,6)));
+  const time=node('time','',new Date(m.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})); time.dateTime=new Date(m.created_at).toISOString(); byline.append(time); content.append(byline);
+  if(m.reply_to) { const parent=messages.find(p=>p.seq===m.reply_to); content.append(node('div','thread-ref','↳ '+(parent?parent.nickname+': '+parent.body:'Earlier message'))); }
+  content.append(node('div','body',m.body));
+  const footer=node('div','message-footer'); const reply=node('button','reply-button','Reply'); reply.type='button'; reply.addEventListener('click',()=>{selectReply(m);$('body').focus();}); footer.append(reply);
+  if(m.source==='octra') footer.append(node('span','',m.status==='delivered'?'✓ Confirmed in local simulation':m.status==='uncertain'?'Delivery unknown · not resent':m.status));
+  content.append(footer); row.append(content); fragment.append(row);
+ }
+ $('messages').replaceChildren(fragment); if(atBottom) feed.scrollTop=feed.scrollHeight;
+}
+function selectReply(message) { replyTo=message?.reply_to ?? message?.seq ?? null; const root=messages.find(m=>m.seq===replyTo); $('replying').hidden=!replyTo; $('reply-label').textContent=root?'Replying to '+root.nickname+': '+root.body.slice(0,80):''; }
+async function markRead() {
+ if(!guest || document.hidden || !messages.length) return;
+ const feed=$('feed'); if(feed.scrollHeight-feed.scrollTop-feed.clientHeight>90) return;
+ const seq=messages.at(-1).seq; if(seq<=guest.readSeq) return;
+ const current=generation; try { const result=await api('read',{seq}); if(current===generation && guest?.id===result.id) guest.readSeq=result.readSeq; } catch {}
+}
+async function refresh() {
+ if(refreshing) return; refreshing=true; const current=generation;
+ try { const data=await api('room'); if(current!==generation) return; setGuest(data.guest); messages=data.messages; render(); $('connection').textContent='Local alpha · '+messages.length+' recent messages'; await markRead(); }
+ catch(e) { if(current!==generation) return; if(e.status===401) setGuest(null); else error(e); }
+ finally {refreshing=false;}
+}
+document.querySelectorAll('[data-persona]').forEach(button=>button.addEventListener('click',async()=>{
+ const current=++generation; document.querySelectorAll('[data-persona]').forEach(b=>b.disabled=true);
+ try { const data=await api('login',{persona:button.dataset.persona}); if(current!==generation)return; setGuest(data.guest); $('login-error').textContent=''; await refresh(); }
+ catch(e){$('login-error').textContent=e.message;} finally{document.querySelectorAll('[data-persona]').forEach(b=>b.disabled=false);}
+}));
+$('leave').addEventListener('click',async()=>{if(sending)return;try{await api('logout',{});generation++;setGuest(null);messages=[];$('messages').replaceChildren();error(null);}catch(e){error(e);}});
+$('profile-form').addEventListener('submit',async event=>{event.preventDefault();try{const next=await api('profile',{nickname:$('nickname').value});setGuest(next);error(null);}catch(e){error(e);}});
+$('cancel-reply').addEventListener('click',()=>selectReply(null));
+$('compose').addEventListener('submit',async event=>{
+ event.preventDefault(); if(sending || !guest || !$('body').value.trim()) return;
+ const body=$('body').value.trim(); const draft={body,replyTo};
+ if(!retry || retry.body!==body || retry.replyTo!==replyTo) retry={...draft,clientId:crypto.randomUUID()};
+ sending=true;$('send').disabled=true;$('leave').disabled=true;error(null);
+ try {await api('messages',retry);retry=null;$('body').value='';selectReply(null);await refresh();$('feed').scrollTop=$('feed').scrollHeight;await markRead();}
+ catch(e){error(e);}finally{sending=false;$('send').disabled=false;$('leave').disabled=false;$('body').focus();}
+});
+$('body').addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();$('compose').requestSubmit();}});
+$('fixture-send').addEventListener('click',async()=>{try{await api('fixture-reply',{body:$('fixture-body').value,replyTo});await refresh();error(null);}catch(e){error(e);}});
+$('feed').addEventListener('scroll',()=>markRead()); document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
+refresh();setInterval(()=>{if(guest&&!document.hidden)refresh();},2000);
+</script>
+</body>
+</html>

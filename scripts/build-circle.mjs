@@ -1,0 +1,15 @@
+import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+const ROOT=fileURLToPath(new URL('../',import.meta.url));
+const sha=value=>createHash('sha256').update(value).digest('hex');
+mkdirSync(ROOT+'evidence',{recursive:true});
+const files=['shared/guest-identity.mjs','shared/queue-message.mjs','shared/reactions.mjs','web/circle-transport.mjs','web/queue-transport.mjs','web/circle-app.mjs'];
+const boundary=Number(process.env.BRIDGE_VISIBLE_AFTER || 0);
+if(!Number.isSafeInteger(boundary)||boundary<0)throw new Error('Invalid history boundary');
+const source=files.map(f=>readFileSync(ROOT+f,'utf8').replace(/^import .*;\s*$/gm,'').replace(/^export /gm,'')).join('\n').replace('const visibleAfter = 0;',`const visibleAfter = ${boundary};`);
+if(/<\/script/i.test(source))throw new Error('Script end marker cannot be embedded');
+const html=readFileSync(ROOT+'web/circle.html','utf8').replace('/*__APP__*/',source);
+mkdirSync(ROOT+'build',{recursive:true});writeFileSync(ROOT+'build/index.html',html);
+const receipt={bytes:Buffer.byteLength(html),sha256:sha(html),files,network:'devnet'};
+writeFileSync(ROOT+'evidence/circle-build.json',JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt));
