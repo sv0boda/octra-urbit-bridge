@@ -2,8 +2,9 @@ const el = id => document.getElementById(id);
 const node = (tag, cls, text) => {const e = document.createElement(tag); e.className = cls; e.textContent = text; return e;};
 let transport, address, parent = 0, polling = false, pending = null, busy = false, timer, sendError = '', connecting = false, receipt = null, sendStage = '', slowTimer;
 const bridge = window.OctraCircle;
-// Owner cleared the first nine test records on 2026-11-05; chain history remains public.
+// Set a display boundary at build time if an operator has cleared old test records.
 const visibleAfter = 0;
+function startPolling(){if(!timer)timer=setInterval(()=>{if(!busy && !document.hidden)return refresh();},20000);}
 function render(messages) {
   const feed = el('messages'), nearBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 100;
   feed.replaceChildren();
@@ -98,6 +99,8 @@ async function refresh() {
     address=room.address;el('wallet').title=address;el('wallet').textContent=`${address.slice(0,9)}…${address.slice(-6)}`;
     if(!el('nickname').value)el('nickname').value=room.nickname || 'Guest '+address.slice(-4);
     render(room.messages);
+    el('composer').classList.remove('hidden');el('messages').classList.remove('hidden');el('entry').classList.add('hidden');el('entry-foot').classList.add('hidden');el('connect').classList.add('hidden');el('login-help').classList.add('hidden');
+    startPolling();
     if (receipt && !pending && !busy && sendStage !== 'delivered') {
       const message = room.messages.find(m=>m.id===receipt.id) || await transport.message(receipt.id);
       confirmMessage(message);
@@ -105,7 +108,7 @@ async function refresh() {
     el('error').textContent=sendError;
     el('connection').textContent='Bridge chat · connected';el('room-state').textContent='Connected';el('room-state').classList.add('online');
     return true;
-  }catch(e){el('error').textContent=[sendError,e.message].filter(Boolean).join('\n');el('connection').textContent='Connection interrupted. Checking again shortly…';el('room-state').textContent='Reconnecting…';el('room-state').classList.remove('online');return false;}
+  }catch(e){if(e.code==='RATE_LIMITED')startPolling();el('error').textContent=[sendError,e.message].filter(Boolean).join('\n');el('connection').textContent=e.code==='RATE_LIMITED'?'Devnet is busy. Pausing requests; checking again automatically…':'Connection interrupted. Checking again shortly…';el('room-state').textContent=e.code==='RATE_LIMITED'?'Rate limited':'Reconnecting…';el('room-state').classList.remove('online');return false;}
   finally{polling=false;}
 }
 el('connect').onclick=async()=>{
@@ -113,10 +116,8 @@ el('connect').onclick=async()=>{
   el('error').textContent='';el('connection').textContent='Connecting your wallet…';el('room-state').textContent='Connecting…';
   el('login-help').textContent='The wallet asks separately for your address and access to room data. Neither permission sends a payment.';
   try{
-    transport=queueTransport({bridge,visibleAfter});
-    if(!await refresh() || !address)throw new Error(el('error').textContent || 'Could not open the room. Check your devnet wallet connection.');
-    el('composer').classList.remove('hidden');el('messages').classList.remove('hidden');el('entry').classList.add('hidden');el('entry-foot').classList.add('hidden');el('connect').classList.add('hidden');el('login-help').classList.add('hidden');
-    clearInterval(timer);timer=setInterval(()=>{if(!busy)refresh();},10000);
+    transport ??= queueTransport({bridge,visibleAfter});
+    await refresh();
   }catch(e){el('error').textContent=e.message;el('connection').textContent='Room not connected. You can try again.';el('room-state').textContent='Not connected';el('room-state').classList.remove('online');}
   finally{connecting=false;el('connect').disabled=false;el('connect').textContent='Enter with Octra wallet';}
 };

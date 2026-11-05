@@ -132,3 +132,55 @@ test('validates UTF-8 limits before requesting the wallet', async () => {
   }
   assert.equal(h.calls.length, 0);
 });
+
+test('idle refresh reuses settled messages but still reads delivery and reactions',async()=>{
+  const h=host({value:outgoing('Hello','delivered-native')});
+  await h.client.read();h.calls.length=0;
+  await h.client.read();
+  assert.deepEqual(h.calls.filter(x=>x.method==='program.view').map(x=>x.payload.method),['get_head','get_reactions']);
+  const pending=host();await pending.client.read();pending.state.value=outgoing('Hello 🌙','now-delivered');
+  assert.equal((await pending.client.read()).messages[0].status,'delivered');
+  pending.calls.length=0;await pending.client.read();
+  assert.equal(pending.calls.filter(x=>x.payload?.method==='get_message').length,0);
+});
+
+test('429 pauses every read and send, backs off, and resumes without duplicate calls',async()=>{
+  let time=0,fail=true,calls=0;
+  const bridge={async request(){calls++;if(fail)throw new Error('RPC HTTP 429');return {result:0};}};
+  const client=queueTransport({bridge,now:()=>time});
+  await assert.rejects(client.head(),{code:'RATE_LIMITED'});
+  for(const request of [()=>client.head(),()=>client.read(),()=>client.check('id'),()=>client.send(draft)])
+    await assert.rejects(request(),{code:'RATE_LIMITED'});
+  assert.equal(calls,1);
+  time=30000;await assert.rejects(client.head(),{code:'RATE_LIMITED'});assert.equal(calls,2);
+  time=60000;await assert.rejects(client.head(),{code:'RATE_LIMITED'});assert.equal(calls,2);
+  time=90000;fail=false;assert.equal(await client.head(),0);assert.equal(calls,3);
+});
+
+test('an ambiguous send 429 preserves the request for read-only reconciliation',async()=>{
+  let time=0,calls=0,confirmed=false;
+  const client=queueTransport({now:()=>time,bridge:{async request(method,payload){
+    if(method==='wallet.info')return {address:alice};
+    if(method==='program.call'){calls++;confirmed=true;throw new Error('RPC HTTP 429');}
+    return {result:payload.method==='get_request'?(confirmed?1:0):outgoing()};
+  }}});
+  await assert.rejects(client.send(draft),{code:'RATE_LIMITED'});
+  await assert.rejects(client.check(draft.requestId),{code:'RATE_LIMITED'});
+  time=30000;assert.equal((await client.check(draft.requestId)).body,draft.body);
+  assert.equal(calls,1);
+});
+
+test('a partially loaded room keeps completed messages across a rate-limit pause',async()=>{
+  let time=0,blocked=true;const ids=[];
+  const client=queueTransport({now:()=>time,bridge:{async request(method,payload){
+    if(method==='wallet.info')return {address:alice};
+    const values={get_head:3,get_nickname:'Zoë',get_reactions:'[]'};
+    if(payload.method!=='get_message')return {result:values[payload.method]};
+    const id=payload.params[0];ids.push(id);
+    if(id===2 && blocked)throw new Error('RPC HTTP 429');
+    return {result:tuple([2,'~zod','~zod','Message '+id,0,1,'native-'+id])};
+  }}});
+  await assert.rejects(client.read(),{code:'RATE_LIMITED'});
+  blocked=false;time=30000;assert.equal((await client.read()).messages.length,3);
+  assert.deepEqual(ids,[1,2,2,3]);
+});
